@@ -3,6 +3,9 @@ package com.scis.meraki.sensordatacollector;
 import android.app.IntentService;
 import android.content.Intent;
 import android.content.Context;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
 import android.util.Log;
 
 /**
@@ -12,7 +15,10 @@ import android.util.Log;
  * TODO: Customize class - update intent actions, extra parameters and static
  * helper methods.
  */
-public class MyIntentService extends IntentService {
+public class MyIntentService extends IntentService implements SensorEventListener{
+
+     // TODO: add senson manager variables
+
     // TODO: Rename actions, choose action names that describe tasks that this
     // IntentService can perform, e.g. ACTION_FETCH_NEW_ITEMS
     private static final String ACTION_FOO = "com.scis.meraki.sensordatacollector.action.FOO";
@@ -21,6 +27,7 @@ public class MyIntentService extends IntentService {
     // TODO: Rename parameters
     private static final String EXTRA_PARAM1 = "com.scis.meraki.sensordatacollector.extra.PARAM1";
     private static final String EXTRA_PARAM2 = "com.scis.meraki.sensordatacollector.extra.PARAM2";
+
 
     public MyIntentService() {
         super("MyIntentService");
@@ -87,5 +94,15 @@ public class MyIntentService extends IntentService {
     private void handleActionBaz(String param1, String param2) {
         // TODO: Handle action Baz
         throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+    @Override
+    public void onSensorChanged(SensorEvent sensorEvent) {
+
+    }
+
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int i) {
+
     }
 }
