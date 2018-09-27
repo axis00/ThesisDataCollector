@@ -3,6 +3,7 @@ package com.scis.meraki.sensordatacollector;
 import android.app.IntentService;
 import android.content.Intent;
 import android.content.Context;
+import android.util.Log;
 
 /**
  * An {@link IntentService} subclass for handling asynchronous task requests in
@@ -20,6 +21,10 @@ public class MyIntentService extends IntentService {
     // TODO: Rename parameters
     private static final String EXTRA_PARAM1 = "com.scis.meraki.sensordatacollector.extra.PARAM1";
     private static final String EXTRA_PARAM2 = "com.scis.meraki.sensordatacollector.extra.PARAM2";
+
+    public MyIntentService() {
+        super("MyIntentService");
+    }
 
     /**
      * Starts this service to perform action Foo with the given parameters. If
@@ -51,24 +56,19 @@ public class MyIntentService extends IntentService {
         context.startService(intent);
     }
 
-    public MyIntentService() {
-        super("MyIntentService");
-    }
-
     @Override
     protected void onHandleIntent(Intent intent) {
         if (intent != null) {
-            final String action = intent.getAction();
-            if (ACTION_FOO.equals(action)) {
-                final String param1 = intent.getStringExtra(EXTRA_PARAM1);
-                final String param2 = intent.getStringExtra(EXTRA_PARAM2);
-                handleActionFoo(param1, param2);
-            } else if (ACTION_BAZ.equals(action)) {
-                final String param1 = intent.getStringExtra(EXTRA_PARAM1);
-                final String param2 = intent.getStringExtra(EXTRA_PARAM2);
-                handleActionBaz(param1, param2);
+            for (int i = 0 ; i <= 10; i++) {
+                Log.d("string", "onHandleIntent: type lang ako");
+                try {
+                    Thread.sleep(2000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
             }
         }
+
     }
 
     /**
