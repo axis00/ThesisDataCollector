@@ -6,6 +6,7 @@ import android.content.Context;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.util.Log;
 
 /**
@@ -18,73 +19,62 @@ import android.util.Log;
 public class MyIntentService extends IntentService implements SensorEventListener{
 
      // TODO: add senson manager variables
+    private SensorManager mSensorManager;
+    private Sensor accelerometerSensor;
 
     // TODO: Rename actions, choose action names that describe tasks that this
     // IntentService can perform, e.g. ACTION_FETCH_NEW_ITEMS
-    private static final String ACTION_FOO = "com.scis.meraki.sensordatacollector.action.FOO";
-    private static final String ACTION_BAZ = "com.scis.meraki.sensordatacollector.action.BAZ";
+    public static final String ACTION_RECORD = "com.scis.meraki.sensordatacollector.action.RECORD";
+    public static final String ACTION_END = "com.scis.meraki.sensordatacollector.action.END";
 
-    // TODO: Rename parameters
-    private static final String EXTRA_PARAM1 = "com.scis.meraki.sensordatacollector.extra.PARAM1";
-    private static final String EXTRA_PARAM2 = "com.scis.meraki.sensordatacollector.extra.PARAM2";
+    private static final String EXTRA_ACTIVITY = "com.scis.meraki.sensordatacollector.extra.ACTIVITY";
 
 
     public MyIntentService() {
         super("MyIntentService");
+
+
     }
 
-    /**
-     * Starts this service to perform action Foo with the given parameters. If
-     * the service is already performing a task this action will be queued.
-     *
-     * @see IntentService
-     */
-    // TODO: Customize helper method
-    public static void startActionFoo(Context context, String param1, String param2) {
+    public static void startActionRecord(Context context, String activity) {
         Intent intent = new Intent(context, MyIntentService.class);
-        intent.setAction(ACTION_FOO);
-        intent.putExtra(EXTRA_PARAM1, param1);
-        intent.putExtra(EXTRA_PARAM2, param2);
+        intent.setAction(ACTION_RECORD);
+        intent.putExtra(EXTRA_ACTIVITY, activity);
         context.startService(intent);
     }
 
-    /**
-     * Starts this service to perform action Baz with the given parameters. If
-     * the service is already performing a task this action will be queued.
-     *
-     * @see IntentService
-     */
-    // TODO: Customize helper method
-    public static void startActionBaz(Context context, String param1, String param2) {
+    public static void startActionEnd(Context context) {
         Intent intent = new Intent(context, MyIntentService.class);
-        intent.setAction(ACTION_BAZ);
-        intent.putExtra(EXTRA_PARAM1, param1);
-        intent.putExtra(EXTRA_PARAM2, param2);
+        intent.setAction(ACTION_END);
         context.startService(intent);
     }
 
     @Override
     protected void onHandleIntent(Intent intent) {
         if (intent != null) {
-            for (int i = 0 ; i <= 10; i++) {
-                Log.d("string", "onHandleIntent: type lang ako");
-                try {
-                    Thread.sleep(2000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-            }
+           String action = intent.getAction();
+           if (action.equals(ACTION_RECORD)) {
+               handleActionRecord(intent.getStringExtra(EXTRA_ACTIVITY));
+           }
+           if (action.equals(ACTION_END)) {
+               handleActionEnd();
+           }
         }
 
     }
 
-    /**
-     * Handle action Foo in the provided background thread with the provided
-     * parameters.
-     */
-    private void handleActionFoo(String param1, String param2) {
-        // TODO: Handle action Foo
-        throw new UnsupportedOperationException("Not yet implemented");
+    private void handleActionRecord (String activity) {
+        if(mSensorManager == null){
+            mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+            accelerometerSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION);
+            mSensorManager.registerListener(this, accelerometerSensor, SensorManager.SENSOR_DELAY_FASTEST);
+        }
+    }
+
+    private void handleActionEnd () {
+        if(mSensorManager != null){
+            mSensorManager.unregisterListener(this);
+        }
     }
 
     /**
@@ -98,7 +88,7 @@ public class MyIntentService extends IntentService implements SensorEventListene
 
     @Override
     public void onSensorChanged(SensorEvent sensorEvent) {
-
+        Log.d("sensorEvent", "" + sensorEvent.values[0] + " " + sensorEvent.values[1] + " " + sensorEvent.values[2]);
     }
 
     @Override
