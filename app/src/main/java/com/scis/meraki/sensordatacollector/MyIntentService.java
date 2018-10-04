@@ -7,7 +7,10 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
+import android.os.Environment;
 import android.util.Log;
+
+import java.io.File;
 
 /**
  * An {@link IntentService} subclass for handling asynchronous task requests in
@@ -19,19 +22,32 @@ import android.util.Log;
 public class MyIntentService extends IntentService implements SensorEventListener{
 
      // TODO: add senson manager variables
-    private SensorManager mSensorManager;
+    private SensorManager mSensorManager = null;
     private Sensor accelerometerSensor;
+
+    private File data;
+    private long timeInterval, prevTime, currTime;
+
+    //flags
+    private static boolean isGettingData = false;
 
     // TODO: Rename actions, choose action names that describe tasks that this
     // IntentService can perform, e.g. ACTION_FETCH_NEW_ITEMS
     public static final String ACTION_RECORD = "com.scis.meraki.sensordatacollector.action.RECORD";
     public static final String ACTION_END = "com.scis.meraki.sensordatacollector.action.END";
 
+    public static final String ACTION_STARTWRITE = "com.scis.meraki.sensordatacollector.action.STARTWRITE";
+    public static final String ACTION_ENDWRITE = "com.scis.meraki.sensordatacollector.action.ENDWRITE";
+
     private static final String EXTRA_ACTIVITY = "com.scis.meraki.sensordatacollector.extra.ACTIVITY";
 
 
     public MyIntentService() {
         super("MyIntentService");
+
+        prevTime = currTime = System.currentTimeMillis();
+        data = new File(getFilesDir(), "data-" + currTime + ".json");
+        timeInterval = 10000;
 
 
     }
@@ -46,6 +62,18 @@ public class MyIntentService extends IntentService implements SensorEventListene
     public static void startActionEnd(Context context) {
         Intent intent = new Intent(context, MyIntentService.class);
         intent.setAction(ACTION_END);
+        context.startService(intent);
+    }
+
+    public static void startActionStartWrite(Context context) {
+        Intent intent = new Intent(context, MyIntentService.class);
+        intent.setAction(ACTION_RECORD);
+        context.startService(intent);
+    }
+
+    public static void setActionStartEnd(Context context) {
+        Intent intent = new Intent(context, MyIntentService.class);
+        intent.setAction(ACTION_RECORD);
         context.startService(intent);
     }
 
@@ -64,35 +92,57 @@ public class MyIntentService extends IntentService implements SensorEventListene
     }
 
     private void handleActionRecord (String activity) {
-        if(mSensorManager == null){
+        if(mSensorManager == null && !isGettingData){
             mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
-            accelerometerSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION);
+            accelerometerSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
             mSensorManager.registerListener(this, accelerometerSensor, SensorManager.SENSOR_DELAY_FASTEST);
+            prevTime = currTime = System.currentTimeMillis();
+            isGettingData = true;
         }
     }
 
     private void handleActionEnd () {
-        if(mSensorManager != null){
-            mSensorManager.unregisterListener(this);
-        }
+       isGettingData = false;
     }
 
-    /**
-     * Handle action Baz in the provided background thread with the provided
-     * parameters.
-     */
-    private void handleActionBaz(String param1, String param2) {
-        // TODO: Handle action Baz
-        throw new UnsupportedOperationException("Not yet implemented");
+    private void handleActionStartWrite () {
+
+    }
+
+    private void handleActionEndWrite () {
+
+    }
+
+    private void stopSensor(){
+        mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
+        mSensorManager.unregisterListener(this,accelerometerSensor);
     }
 
     @Override
     public void onSensorChanged(SensorEvent sensorEvent) {
+        if(!isGettingData){
+            stopSensor();
+            Log.e("sensor change", "onSensorChanged: ");
+            return;
+        }
+
+        currTime = System.currentTimeMillis();
         Log.d("sensorEvent", "" + sensorEvent.values[0] + " " + sensorEvent.values[1] + " " + sensorEvent.values[2]);
+    }
+
+    public void writeData(float x, float y, float z, long time) {
+        String data = "{" +
+                "x : " + x + " , " +
+                "y : " + y + " , " +
+                "z : " + z + " , " +
+                "time : " + time +
+                "}";
     }
 
     @Override
     public void onAccuracyChanged(Sensor sensor, int i) {
 
     }
+
+
 }
