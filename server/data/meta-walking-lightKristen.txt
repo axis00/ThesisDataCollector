@@ -1,0 +1,1 @@
+{"freq":"50","activity":"walking-light","intensity":"light","height":"5\"","weight":"48kg","placement":"left-front-pocket","actorName":"Kristen","distance":0,"device":"phone-ni-neil"}

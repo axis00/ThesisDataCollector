@@ -1,0 +1,1 @@
+{"freq":"50","activity":"walking","intensity":"normal","height":"5'7\"","weight":"52","placement":"right-front-pocket","actorName":"Neil","distance":0,"device":"phone-ni-neil"}

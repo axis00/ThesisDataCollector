@@ -1,0 +1,1 @@
+{"freq":"50","activity":"walking","intensity":"light","height":"5ft","weight":"48kg","placement":"left-front-pocket","actorName":"a3s","distance":0,"device":"oppo"}

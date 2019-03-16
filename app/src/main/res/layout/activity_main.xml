@@ -9,67 +9,26 @@
 
     <LinearLayout
         android:layout_height="wrap_content"
-        android:layout_width="match_parent">
-        <Button
-            android:id="@+id/start_write_button"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="START"/>
-        <Button
-            android:id="@+id/end_write_button"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="END"/>
-    </LinearLayout>
-
-
-    <LinearLayout
-        android:layout_height="wrap_content"
         android:layout_width="match_parent"
         android:orientation="vertical">
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content">
             <Button
-                android:id="@+id/record_button"
+                android:id="@+id/start_bt_button"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:text="RECORD" />
+                android:text="START" />
 
             <Button
-                android:id="@+id/stop_button"
+                android:id="@+id/stop_bt_button"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:text="STOP" />
         </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="match_parent">
-            <EditText
-                android:id="@+id/action_text"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:ems="10"
-                android:inputType="textPersonName"
-                android:hint="Activity"
-                android:text="" />
-            <EditText
-                android:id="@+id/position_text"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:ems="10"
-                android:inputType="textPersonName"
-                android:hint="Position"
-                android:text="" />
-        </LinearLayout>
-
     </LinearLayout>
 
 </LinearLayout>

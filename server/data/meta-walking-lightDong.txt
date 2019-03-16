@@ -1,0 +1,1 @@
+{"freq":"50","activity":"walking-light","intensity":"light","height":"5'6\"","weight":"53","placement":"right-front-pocket","actorName":"Dong","distance":0,"device":"phone-ni-neil"}
