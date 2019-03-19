@@ -105,7 +105,7 @@ function execCommand(command){
 
 function startWrite(){
 
-    terminal("Give the Activity params [Activity Intensity Height Weight Placement Device ActorName] : ");
+    terminal("\nGive the Activity params \n[Activity Intensity Height Weight Placement Device ActorName ExperimentNumber Orientation Sensor] :\n ");
     terminal.inputField({history : hist, autoComplete : activities, autoCompleteMenu : false},  (err, input) => {
         if(err){
             console.log(err);
@@ -119,7 +119,9 @@ function startWrite(){
             var placement = params[4];
             var device = params[5];
             var actorName = params[6];
-
+            var expNumber = params[7];
+            var orientation = params[8];
+            var sensor = params[9];
             
             var metaData = {
                 freq : frequency,
@@ -130,7 +132,10 @@ function startWrite(){
                 placement : placement,
                 actorName : actorName,
                 distance : 0,
-                device : device
+                device : device,
+                expNumber : expNumber,
+                orientation : orientation,
+                sensor : sensor
             }
 
             writeData(metaData);
@@ -142,8 +147,8 @@ function startWrite(){
 
 function writeData(metaData){
     var folder = 'data/'
-    var fileName = folder + metaData.activity + metaData.actorName + '.txt';
-    var metaFileName = folder + 'meta-' + metaData.activity + metaData.actorName + '.txt';
+    var fileName = folder + metaData.activity + metaData.actorName + '_' + metaData.expNumber + '.txt';
+    var metaFileName = folder + 'meta-' + metaData.activity + metaData.actorName + '_' + metaData.expNumber + '.json';
 
     //write meta data
     fs.writeFile(metaFileName,JSON.stringify(metaData),(err) => {
