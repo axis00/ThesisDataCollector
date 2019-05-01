@@ -21,6 +21,9 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.nio.charset.StandardCharsets;
+import java.util.Queue;
+import java.util.LinkedList;
+import java.lang.Float;
 
 /**
  * An {@link IntentService} subclass for handling asynchronous task requests in
@@ -37,18 +40,24 @@ public class DataCollectionService extends IntentService implements SensorEventL
     //sensor related variables
     private SensorManager mSensorManager = null;
     private Sensor accelerometerSensor;
+    private Sensor gyroscopeSensor;
     private static int samplingRate = 1000000;
 
     private static long timeInterval, prevTime, currTime;
-    private static String dataBuffer;
+    private static float[] dataBuffer = new float[3];
+    private static int tick = 0;
 
     //flags
     private static boolean isGettingData = false;
 
     private static Context context;
 
+    //data
+    private float[][] data = new float[100][6];
+    Queue<Float> bufferQueue = new LinkedList<>();
+
     //bluetooth
-    private static BluetoothService btService;
+    //private static BluetoothService btService;
     @SuppressLint("HandlerLeak")
     private final Handler btHandler = new Handler(){
 
@@ -102,7 +111,7 @@ public class DataCollectionService extends IntentService implements SensorEventL
             Log.d(TAG, "setFreq: restarting");
             startSensor();
             String res = "RES Frequency set to " + freq + "hz";
-            btService.write(res.getBytes(StandardCharsets.UTF_8));
+            //btService.write(res.getBytes(StandardCharsets.UTF_8));
         }
     };
 
@@ -124,7 +133,6 @@ public class DataCollectionService extends IntentService implements SensorEventL
         prevTime = currTime = System.currentTimeMillis();
 
         timeInterval = 1000;
-        dataBuffer = "";
 
     }
 
@@ -160,17 +168,17 @@ public class DataCollectionService extends IntentService implements SensorEventL
 
         startSensor();
 
-        if(btService == null){
-            btService = new BluetoothService(context,btHandler);
-            btService.start();
-        } else {
-            btService.start();
-        }
+//        if(btService == null){
+//            btService = new BluetoothService(context,btHandler);
+//            btService.start();
+//        } else {
+//            btService.start();
+//        }
 
     }
     private void handleActionStop() {
         stopSensor();
-        btService.stop();
+        //btService.stop();
     }
 
     private void startSensor(){
@@ -179,6 +187,9 @@ public class DataCollectionService extends IntentService implements SensorEventL
             mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
             accelerometerSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
             mSensorManager.registerListener(this, accelerometerSensor, samplingRate);
+
+            gyroscopeSensor = mSensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
+            mSensorManager.registerListener(this, gyroscopeSensor, samplingRate);
 
             isGettingData = true;
 
@@ -194,6 +205,7 @@ public class DataCollectionService extends IntentService implements SensorEventL
 
     @Override
     public void onSensorChanged(SensorEvent sensorEvent) {
+
         if(!isGettingData){
             stopSensor();
             Log.e("sensor change", "onSensorChanged: ");
@@ -201,11 +213,21 @@ public class DataCollectionService extends IntentService implements SensorEventL
         }
         currTime = System.currentTimeMillis();
 
-        dataBuffer = sensorEvent.values[0] + " " + sensorEvent.values[1] + " " + sensorEvent.values[2] + " " + currTime + "\n";
+        bufferQueue.add(sensorEvent.values[0]);
+        bufferQueue.add(sensorEvent.values[1]);
+        bufferQueue.add(sensorEvent.values[2]);
+
+        tick++;
+
+        if(tick == 99){
+            arrayAppender(data, bufferQueue);
+        }
+
+        //dataBuffer = sensorEvent.values[0] + " " + sensorEvent.values[1] + " " + sensorEvent.values[2] + " " + currTime + "\n";
 
 //        Log.d(TAG, "onSensorChanged: " + dataBuffer);
-        byte[] out = dataBuffer.getBytes(StandardCharsets.UTF_8);
-        btService.write(out);
+        //byte[] out = dataBuffer.getBytes(StandardCharsets.UTF_8);
+        //btService.write(out);
 
     }
 
@@ -214,6 +236,16 @@ public class DataCollectionService extends IntentService implements SensorEventL
 
     }
 
+    public void arrayAppender(float[][] data, Queue<Float> bufferQueue){
 
+        for(int i = 0; i < data.length; i++){
+            for(int j = 0; j < data[i].length; j++){
+                float f = bufferQueue.remove();
+                data[i][j] = f;
+            }
+
+        }
+
+    }
 
 }
