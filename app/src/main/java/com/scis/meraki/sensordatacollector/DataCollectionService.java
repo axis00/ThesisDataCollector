@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 import android.app.IntentService;
 import android.content.Intent;
 import android.content.Context;
+import android.content.res.AssetFileDescriptor;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -13,13 +14,21 @@ import android.os.Message;
 import android.util.Log;
 import android.widget.Toast;
 
+import org.tensorflow.lite.Interpreter;
+
 import java.io.BufferedWriter;
 import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
+
+import java.io.IOException;
+import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
+
 import java.nio.charset.StandardCharsets;
 import java.util.Queue;
 import java.util.LinkedList;
@@ -33,6 +42,9 @@ import java.lang.Float;
  * helper methods.
  */
 public class DataCollectionService extends IntentService implements SensorEventListener{
+
+    //model
+    Interpreter tflite;
 
     // Debugging
     private static final String TAG = "BluetoothService";
@@ -133,6 +145,13 @@ public class DataCollectionService extends IntentService implements SensorEventL
         prevTime = currTime = System.currentTimeMillis();
 
         timeInterval = 1000;
+
+        //create tflite object, loaded from model file
+        try {
+            tflite = new Interpreter(loadModelFile());
+        } catch (Exception ex){
+            ex.printStackTrace();
+        }
 
     }
 
@@ -247,5 +266,18 @@ public class DataCollectionService extends IntentService implements SensorEventL
         }
 
     }
+
+    // Memory-map the model file from assets
+    private MappedByteBuffer loadModelFile() throws IOException {
+        // Open the model using an input stream, and memory map it to load
+        AssetFileDescriptor fileDescriptor = this.getAssets().openFd("CNN_Model.tflite");
+        FileInputStream inputStream = new FileInputStream(fileDescriptor.getFileDescriptor());
+        FileChannel fileChannel = inputStream.getChannel();
+        long startOffset = fileDescriptor.getStartOffset();
+        long declaredLength = fileDescriptor.getDeclaredLength();
+        return fileChannel.map(FileChannel.MapMode.READ_ONLY, startOffset, declaredLength);
+    }
+
+
 
 }

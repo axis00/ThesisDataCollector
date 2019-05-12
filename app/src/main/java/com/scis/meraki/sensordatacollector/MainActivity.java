@@ -5,6 +5,7 @@ import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.content.res.AssetFileDescriptor;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -17,11 +18,17 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+
+
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.nio.channels.FileChannel;
 import java.util.Scanner;
 
+
 public class MainActivity extends Activity {
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,7 +41,6 @@ public class MainActivity extends Activity {
 
         startBTService.setOnClickListener(startListener);
         stopBTService.setOnClickListener(stopListener);
-
     }
 
     @Override
@@ -60,5 +66,7 @@ public class MainActivity extends Activity {
             DataCollectionService.startActionStop(MainActivity.this);
         }
     };
+
+
 
 }
