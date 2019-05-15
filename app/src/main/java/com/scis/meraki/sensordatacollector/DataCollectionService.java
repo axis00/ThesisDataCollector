@@ -44,7 +44,9 @@ import java.lang.Float;
 public class DataCollectionService extends IntentService implements SensorEventListener{
 
     //model
-    Interpreter tflite;
+    private Interpreter tflite;
+
+    private float inferredValue;
 
     // Debugging
     private static final String TAG = "BluetoothService";
@@ -65,7 +67,7 @@ public class DataCollectionService extends IntentService implements SensorEventL
     private static Context context;
 
     //data
-    private float[][] data = new float[100][6];
+    private float[] data = new float[960];
     Queue<Float> bufferQueue = new LinkedList<>();
 
     //bluetooth
@@ -238,9 +240,11 @@ public class DataCollectionService extends IntentService implements SensorEventL
 
         tick++;
 
-        if(tick == 99){
+        if(tick == 959){
             arrayAppender(data, bufferQueue);
         }
+
+        doInference();
 
         //dataBuffer = sensorEvent.values[0] + " " + sensorEvent.values[1] + " " + sensorEvent.values[2] + " " + currTime + "\n";
 
@@ -250,19 +254,33 @@ public class DataCollectionService extends IntentService implements SensorEventL
 
     }
 
+    public float doInference() {
+        float[] input = data;
+
+        float[][] output = new float[1][1];
+
+        try {
+            tflite.run(input, output);
+        } catch (Exception e){
+            e.printStackTrace();
+        }
+
+        float inferredValue = output[0][0];
+
+        return inferredValue;
+
+    }
+
     @Override
     public void onAccuracyChanged(Sensor sensor, int i) {
 
     }
 
-    public void arrayAppender(float[][] data, Queue<Float> bufferQueue){
+    public void arrayAppender(float[] data, Queue<Float> bufferQueue){
 
         for(int i = 0; i < data.length; i++){
-            for(int j = 0; j < data[i].length; j++){
-                float f = bufferQueue.remove();
-                data[i][j] = f;
-            }
-
+            float f = bufferQueue.remove();
+            data[i] = f;
         }
 
     }
