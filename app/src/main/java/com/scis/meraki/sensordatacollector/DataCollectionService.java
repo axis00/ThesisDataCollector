@@ -16,16 +16,9 @@ import android.widget.Toast;
 
 import org.tensorflow.lite.Interpreter;
 
-import java.io.BufferedWriter;
-import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.OutputStreamWriter;
 
-import java.io.IOException;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 
@@ -43,6 +36,12 @@ import java.lang.Float;
  */
 public class DataCollectionService extends IntentService implements SensorEventListener{
 
+    // TODO: Rename actions, choose action names that describe tasks that this
+    // IntentService can perform, e.g. ACTION_FETCH_NEW_ITEMS
+
+    private static final String ACTION_START = "com.scis.meraki.sensordatacollector.action.STARTBT";
+    private static final String ACTION_STOP = "com.scis.meraki.sensordatacollector.action.STOPBT";
+
     //model
     private Interpreter tflite;
 
@@ -55,19 +54,32 @@ public class DataCollectionService extends IntentService implements SensorEventL
     private SensorManager mSensorManager = null;
     private Sensor accelerometerSensor;
     private Sensor gyroscopeSensor;
-    private static int samplingRate = 1000000;
+    private static int samplingRate = 100000;
 
     private static long timeInterval, prevTime, currTime;
     private static float[] dataBuffer = new float[3];
     private static int tick = 0;
+
+    private int accTick = 0;
+    private int gyroTick = 0;
 
     //flags
     private static boolean isGettingData = false;
 
     private static Context context;
 
-    //data
-    private float[] data = new float[960];
+    //inputData
+    private static int windowSize = 100;
+    private static int dims = 6;
+
+    private static float[] gyroData = null;
+    private static float[] accData = null;
+
+    private static float[] inputData = new float[windowSize * dims];
+
+    private static float[] accSensorData = new float[windowSize * 3];
+    private static float[] gyroSensorData = new float[windowSize * 3];
+
     Queue<Float> bufferQueue = new LinkedList<>();
 
     //bluetooth
@@ -121,7 +133,7 @@ public class DataCollectionService extends IntentService implements SensorEventL
 
         private void setFreq(float freq){
             samplingRate = (int)(1000000/freq);
-            stopSensor();
+            stopSensors();
             Log.d(TAG, "setFreq: restarting");
             startSensor();
             String res = "RES Frequency set to " + freq + "hz";
@@ -129,11 +141,6 @@ public class DataCollectionService extends IntentService implements SensorEventL
         }
     };
 
-    // TODO: Rename actions, choose action names that describe tasks that this
-    // IntentService can perform, e.g. ACTION_FETCH_NEW_ITEMS
-
-    private static final String ACTION_START = "com.scis.meraki.sensordatacollector.action.STARTBT";
-    private static final String ACTION_STOP = "com.scis.meraki.sensordatacollector.action.STOPBT";
 
 
     public DataCollectionService() {
@@ -198,7 +205,7 @@ public class DataCollectionService extends IntentService implements SensorEventL
 
     }
     private void handleActionStop() {
-        stopSensor();
+        stopSensors();
         //btService.stop();
     }
 
@@ -217,47 +224,109 @@ public class DataCollectionService extends IntentService implements SensorEventL
         }
     }
 
-    private void stopSensor(){
+    private void stopSensors(){
         mSensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);
         mSensorManager.unregisterListener(this,accelerometerSensor);
         mSensorManager = null;
         isGettingData = false;
     }
 
+    private void addGyroData(float[] data){
+        this.gyroData = data;
+
+        if(accData != null) {
+            concatenateData();
+        }
+    }
+
+    private void addAccData(float[] data){
+        this.accData = data;
+
+        if(gyroData != null){
+            concatenateData();
+        }
+    }
+
+    private void concatenateData(){
+
+        for(int i = 0; i < windowSize; i++){
+            this.inputData[i * 6] = this.accData[i * 3];
+            this.inputData[i * 6 + 1] = this.accData[i * 3 + 1];
+            this.inputData[i * 6 + 2] = this.accData[i * 3 + 2];
+            this.inputData[i * 6 + 3] = this.gyroData[i * 3];
+            this.inputData[i * 6 + 4] = this.gyroData[i * 3 + 1];
+            this.inputData[i * 6 + 5] = this.gyroData[i * 3 + 2];
+        }
+
+        Log.d("data", "inputData : " + this.inputData.toString() );
+        Log.d("data", "accData : " + this.accData.toString() );
+        Log.d("data", "gyroData : " + this.gyroData.toString() );
+
+        this.accData = null;
+        this.gyroData = null;
+
+
+    }
+
     @Override
     public void onSensorChanged(SensorEvent sensorEvent) {
 
         if(!isGettingData){
-            stopSensor();
+            stopSensors();
             Log.e("sensor change", "onSensorChanged: ");
             return;
         }
-        currTime = System.currentTimeMillis();
 
-        bufferQueue.add(sensorEvent.values[0]);
-        bufferQueue.add(sensorEvent.values[1]);
-        bufferQueue.add(sensorEvent.values[2]);
+        if(sensorEvent.sensor.getType() == Sensor.TYPE_ACCELEROMETER){
 
-        tick++;
+            if (accTick >= windowSize) {
+                accTick = 0;
+                addAccData(accSensorData.clone());
+            } else {
+                accSensorData[accTick * 3] = sensorEvent.values[0];
+                accSensorData[accTick * 3 + 1] = sensorEvent.values[1];
+                accSensorData[accTick * 3 + 2] = sensorEvent.values[2];
+                accTick++;
+            }
+        } if (sensorEvent.sensor.getType() == Sensor.TYPE_GYROSCOPE) {
 
-        if(tick == 959){
-            arrayAppender(data, bufferQueue);
+            if (gyroTick >= windowSize) {
+                gyroTick = 0;
+                addGyroData(gyroSensorData.clone());
+            } else {
+                gyroSensorData[gyroTick * 3] = sensorEvent.values[0];
+                gyroSensorData[gyroTick * 3 + 1] = sensorEvent.values[1];
+                gyroSensorData[gyroTick * 3 + 2] = sensorEvent.values[2];
+                gyroTick++;
+            }
         }
 
-        doInference();
-
-        //dataBuffer = sensorEvent.values[0] + " " + sensorEvent.values[1] + " " + sensorEvent.values[2] + " " + currTime + "\n";
-
-//        Log.d(TAG, "onSensorChanged: " + dataBuffer);
-        //byte[] out = dataBuffer.getBytes(StandardCharsets.UTF_8);
-        //btService.write(out);
+//        currTime = System.currentTimeMillis();
+//
+//        bufferQueue.add(sensorEvent.values[0]);
+//        bufferQueue.add(sensorEvent.values[1]);
+//        bufferQueue.add(sensorEvent.values[2]);
+//
+//        tick++;
+//
+//        if(tick == 159){
+//            arrayAppender(inputData, bufferQueue);
+//        }
+//
+//        doInference();
+//
+//        //dataBuffer = sensorEvent.values[0] + " " + sensorEvent.values[1] + " " + sensorEvent.values[2] + " " + currTime + "\n";
+//
+////        Log.d(TAG, "onSensorChanged: " + dataBuffer);
+//        //byte[] out = dataBuffer.getBytes(StandardCharsets.UTF_8);
+//        //btService.write(out);
 
     }
 
-    public float doInference() {
-        float[] input = data;
+    public float[] doInference() {
+        float[] input = inputData;
 
-        float[][] output = new float[1][1];
+        float[] output = new float[11];
 
         try {
             tflite.run(input, output);
@@ -265,7 +334,7 @@ public class DataCollectionService extends IntentService implements SensorEventL
             e.printStackTrace();
         }
 
-        float inferredValue = output[0][0];
+        float[] inferredValue = output;
 
         return inferredValue;
 
@@ -273,15 +342,6 @@ public class DataCollectionService extends IntentService implements SensorEventL
 
     @Override
     public void onAccuracyChanged(Sensor sensor, int i) {
-
-    }
-
-    public void arrayAppender(float[] data, Queue<Float> bufferQueue){
-
-        for(int i = 0; i < data.length; i++){
-            float f = bufferQueue.remove();
-            data[i] = f;
-        }
 
     }
 
