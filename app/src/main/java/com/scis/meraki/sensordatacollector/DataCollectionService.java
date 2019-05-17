@@ -54,7 +54,7 @@ public class DataCollectionService extends IntentService implements SensorEventL
     private SensorManager mSensorManager = null;
     private Sensor accelerometerSensor;
     private Sensor gyroscopeSensor;
-    private static int samplingRate = 100000;
+    private static int samplingRate = 20000;
 
     private static long timeInterval, prevTime, currTime;
     private static float[] dataBuffer = new float[3];
@@ -250,20 +250,22 @@ public class DataCollectionService extends IntentService implements SensorEventL
     private void concatenateData(){
 
         for(int i = 0; i < windowSize; i++){
-            this.inputData[i * 6] = this.accData[i * 3];
-            this.inputData[i * 6 + 1] = this.accData[i * 3 + 1];
-            this.inputData[i * 6 + 2] = this.accData[i * 3 + 2];
-            this.inputData[i * 6 + 3] = this.gyroData[i * 3];
-            this.inputData[i * 6 + 4] = this.gyroData[i * 3 + 1];
-            this.inputData[i * 6 + 5] = this.gyroData[i * 3 + 2];
+            inputData[i * 6] = accData[i * 3];
+            inputData[i * 6 + 1] = accData[i * 3 + 1];
+            inputData[i * 6 + 2] = accData[i * 3 + 2];
+            inputData[i * 6 + 3] = gyroData[i * 3];
+            inputData[i * 6 + 4] = gyroData[i * 3 + 1];
+            inputData[i * 6 + 5] = gyroData[i * 3 + 2];
         }
 
-        Log.d("data", "inputData : " + this.inputData.toString() );
-        Log.d("data", "accData : " + this.accData.toString() );
-        Log.d("data", "gyroData : " + this.gyroData.toString() );
+        Log.d("data", "inputData : " + inputData.toString() );
+        Log.d("data", "accData : " + accData.toString() );
+        Log.d("data", "gyroData : " + gyroData.toString() );
 
-        this.accData = null;
-        this.gyroData = null;
+        accData = null;
+        gyroData = null;
+
+        doInference(inputData);
 
 
     }
@@ -283,9 +285,9 @@ public class DataCollectionService extends IntentService implements SensorEventL
                 accTick = 0;
                 addAccData(accSensorData.clone());
             } else {
-                accSensorData[accTick * 3] = sensorEvent.values[0];
-                accSensorData[accTick * 3 + 1] = sensorEvent.values[1];
-                accSensorData[accTick * 3 + 2] = sensorEvent.values[2];
+                accSensorData[accTick * 3] = sensorEvent.values[0] / 9.80665f;
+                accSensorData[accTick * 3 + 1] = sensorEvent.values[1] / 9.80665f;
+                accSensorData[accTick * 3 + 2] = sensorEvent.values[2] / 9.80665f;
                 accTick++;
             }
         } if (sensorEvent.sensor.getType() == Sensor.TYPE_GYROSCOPE) {
@@ -323,10 +325,9 @@ public class DataCollectionService extends IntentService implements SensorEventL
 
     }
 
-    public float[] doInference() {
-        float[] input = inputData;
+    public float[][] doInference(float[] input) {
 
-        float[] output = new float[11];
+        float[][] output = new float[1][12];
 
         try {
             tflite.run(input, output);
@@ -334,9 +335,8 @@ public class DataCollectionService extends IntentService implements SensorEventL
             e.printStackTrace();
         }
 
-        float[] inferredValue = output;
-
-        return inferredValue;
+//        printArray(output[0]);
+        return output;
 
     }
 
@@ -355,6 +355,12 @@ public class DataCollectionService extends IntentService implements SensorEventL
         long declaredLength = fileDescriptor.getDeclaredLength();
         return fileChannel.map(FileChannel.MapMode.READ_ONLY, startOffset, declaredLength);
     }
+
+//    public void printArray(float[] array) {
+//        for (int i = 0; i < array.length; i++){
+//            Log.d("output", "" + array[i]);
+//        }
+//    }
 
 
 
