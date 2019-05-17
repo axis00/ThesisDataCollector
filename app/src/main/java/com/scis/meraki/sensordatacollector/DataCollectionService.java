@@ -57,7 +57,7 @@ public class DataCollectionService extends IntentService implements SensorEventL
     private static int samplingRate = 20000;
 
     private static long timeInterval, prevTime, currTime;
-    private static float[] dataBuffer = new float[3];
+    private static float[][] dataBuffer = new float[1][12];
     private static int tick = 0;
 
     private int accTick = 0;
@@ -83,7 +83,7 @@ public class DataCollectionService extends IntentService implements SensorEventL
     Queue<Float> bufferQueue = new LinkedList<>();
 
     //bluetooth
-    //private static BluetoothService btService;
+    private static BluetoothService btService;
     @SuppressLint("HandlerLeak")
     private final Handler btHandler = new Handler(){
 
@@ -137,7 +137,7 @@ public class DataCollectionService extends IntentService implements SensorEventL
             Log.d(TAG, "setFreq: restarting");
             startSensor();
             String res = "RES Frequency set to " + freq + "hz";
-            //btService.write(res.getBytes(StandardCharsets.UTF_8));
+            btService.write(res.getBytes(StandardCharsets.UTF_8));
         }
     };
 
@@ -196,17 +196,17 @@ public class DataCollectionService extends IntentService implements SensorEventL
 
         startSensor();
 
-//        if(btService == null){
-//            btService = new BluetoothService(context,btHandler);
-//            btService.start();
-//        } else {
-//            btService.start();
-//        }
+        if(btService == null){
+            btService = new BluetoothService(context,btHandler);
+            btService.start();
+        } else {
+            btService.start();
+        }
 
     }
     private void handleActionStop() {
         stopSensors();
-        //btService.stop();
+        btService.stop();
     }
 
     private void startSensor(){
@@ -265,7 +265,7 @@ public class DataCollectionService extends IntentService implements SensorEventL
         accData = null;
         gyroData = null;
 
-        doInference(inputData);
+//        doInference(inputData);
 
 
     }
@@ -314,14 +314,13 @@ public class DataCollectionService extends IntentService implements SensorEventL
 //        if(tick == 159){
 //            arrayAppender(inputData, bufferQueue);
 //        }
+
+
+        dataBuffer = doInference(inputData);
 //
-//        doInference();
-//
-//        //dataBuffer = sensorEvent.values[0] + " " + sensorEvent.values[1] + " " + sensorEvent.values[2] + " " + currTime + "\n";
-//
-////        Log.d(TAG, "onSensorChanged: " + dataBuffer);
-//        //byte[] out = dataBuffer.getBytes(StandardCharsets.UTF_8);
-//        //btService.write(out);
+        Log.d(TAG, "onSensorChanged: " + dataBuffer);
+//        byte[] out = dataBuffer.getBytes(StandardCharsets.UTF_8);
+//        btService.write(out);
 
     }
 
