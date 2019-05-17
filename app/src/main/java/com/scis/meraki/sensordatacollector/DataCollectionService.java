@@ -137,7 +137,7 @@ public class DataCollectionService extends IntentService implements SensorEventL
             Log.d(TAG, "setFreq: restarting");
             startSensor();
             String res = "RES Frequency set to " + freq + "hz";
-            //btService.write(res.getBytes(StandardCharsets.UTF_8));
+            btService.write(res.getBytes(StandardCharsets.UTF_8));
         }
     };
 
@@ -196,17 +196,17 @@ public class DataCollectionService extends IntentService implements SensorEventL
 
         startSensor();
 
-//        if(btService == null){
-//            btService = new BluetoothService(context,btHandler);
-//            btService.start();
-//        } else {
-//            btService.start();
-//        }
+        if(btService == null){
+            btService = new BluetoothService(context,btHandler);
+            btService.start();
+        } else {
+            btService.start();
+        }
 
     }
     private void handleActionStop() {
         stopSensors();
-        //btService.stop();
+        btService.stop();
     }
 
     private void startSensor(){
@@ -312,14 +312,14 @@ public class DataCollectionService extends IntentService implements SensorEventL
 //        if(tick == 159){
 //            arrayAppender(inputData, bufferQueue);
 //        }
-//
+
 //        doInference();
+
+        dataBuffer = sensorEvent.values[0] + " " + sensorEvent.values[1] + " " + sensorEvent.values[2] + " " + currTime + "\n";
 //
-//        //dataBuffer = sensorEvent.values[0] + " " + sensorEvent.values[1] + " " + sensorEvent.values[2] + " " + currTime + "\n";
-//
-////        Log.d(TAG, "onSensorChanged: " + dataBuffer);
-//        //byte[] out = dataBuffer.getBytes(StandardCharsets.UTF_8);
-//        //btService.write(out);
+        Log.d(TAG, "onSensorChanged: " + dataBuffer);
+        byte[] out = dataBuffer.getBytes(StandardCharsets.UTF_8);
+        btService.write(out);
 
     }
 
