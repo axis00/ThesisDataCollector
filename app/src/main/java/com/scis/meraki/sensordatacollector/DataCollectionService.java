@@ -317,8 +317,8 @@ public class DataCollectionService extends IntentService implements SensorEventL
         dataBuffer = "[" + printArray(doInference(inputData)[0]) + "]";
 //
         Log.d(TAG, "onSensorChanged: " + dataBuffer);
-//        byte[] out = dataBuffer.getBytes(StandardCharsets.UTF_8);
-//        btService.write(out);
+        byte[] out = dataBuffer.getBytes(StandardCharsets.UTF_8);
+        btService.write(out);
 
     }
 
