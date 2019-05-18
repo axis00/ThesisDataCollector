@@ -45,8 +45,6 @@ public class DataCollectionService extends IntentService implements SensorEventL
     //model
     private Interpreter tflite;
 
-    private float inferredValue;
-
     // Debugging
     private static final String TAG = "BluetoothService";
 
@@ -57,7 +55,7 @@ public class DataCollectionService extends IntentService implements SensorEventL
     private static int samplingRate = 20000;
 
     private static long timeInterval, prevTime, currTime;
-    private static float[][] dataBuffer = new float[1][12];
+    private static String dataBuffer;
     private static int tick = 0;
 
     private int accTick = 0;
@@ -316,7 +314,7 @@ public class DataCollectionService extends IntentService implements SensorEventL
 //        }
 
 
-        dataBuffer = doInference(inputData);
+        dataBuffer = "[" + printArray(doInference(inputData)[0]) + "]";
 //
         Log.d(TAG, "onSensorChanged: " + dataBuffer);
 //        byte[] out = dataBuffer.getBytes(StandardCharsets.UTF_8);
@@ -355,11 +353,16 @@ public class DataCollectionService extends IntentService implements SensorEventL
         return fileChannel.map(FileChannel.MapMode.READ_ONLY, startOffset, declaredLength);
     }
 
-//    public void printArray(float[] array) {
-//        for (int i = 0; i < array.length; i++){
-//            Log.d("output", "" + array[i]);
-//        }
-//    }
+    public String printArray(float[] array) {
+        String res = "";
+
+        for (int i = 0; i < array.length; i++){
+            res += array[i] + i == array.length-1 ? "" : ",";
+
+        }
+
+        return res;
+    }
 
 
 
