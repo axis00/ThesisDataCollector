@@ -357,7 +357,8 @@ public class DataCollectionService extends IntentService implements SensorEventL
         String res = "";
 
         for (int i = 0; i < array.length; i++){
-            res += array[i] + i == array.length-1 ? "" : ",";
+//            Log.d(TAG, "printArray: " + array[i]);
+            res += array[i] + (i == array.length-1 ? "" : ",");
 
         }
 
