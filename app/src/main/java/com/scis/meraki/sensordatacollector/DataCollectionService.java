@@ -263,8 +263,11 @@ public class DataCollectionService extends IntentService implements SensorEventL
         accData = null;
         gyroData = null;
 
-//        doInference(inputData);
+        dataBuffer = "" + arrMax(doInference(inputData)[0]);
 
+        Log.d(TAG, "onSensorChanged: " + dataBuffer);
+        byte[] out = dataBuffer.getBytes(StandardCharsets.UTF_8);
+        btService.write(out);
 
     }
 
@@ -314,11 +317,7 @@ public class DataCollectionService extends IntentService implements SensorEventL
 //        }
 
 
-        dataBuffer = "" + arrMax(doInference(inputData)[0]);
-//
-        Log.d(TAG, "onSensorChanged: " + dataBuffer);
-        byte[] out = dataBuffer.getBytes(StandardCharsets.UTF_8);
-        btService.write(out);
+
 
     }
 
