@@ -9,8 +9,8 @@ var lastConnection = {
     channel : 0
 }
 
-var activities = ['walking', 'sitting', 'running','jumping'];
-var placement = ['right-pocket','left-pocket','right-hand','left-hand','left-back-pocket','right-back-pocket'];
+// var activities = ['walking', 'sitting', 'running','jumping'];
+// var placement = ['right-pocket','left-pocket','right-hand','left-hand','left-back-pocket','right-back-pocket'];
 
 var frequency = 1;
 var dataBuffer = "";
@@ -19,6 +19,27 @@ var commandMode = false;
 var write = false;
 
 var writeStream = undefined;
+
+var dataStr = "";
+var experimentStarted = false;
+var actualActivity = undefined;
+var accuracy = 0;
+var totalPredictions = 0;
+var correctPredictions = 0;
+const activities = [
+    'WALKING',
+    'WALKING_UPSTAIRS',
+    'WALKING_DOWNSTAIRS',
+    'SITTING',
+    'STANDING',
+    'LAYING',
+    'STAND_TO_SIT',
+    'SIT_TO_STAND',
+    'SIT_TO_LIE',
+    'LIE_TO_SIT',
+    'STAND_TO_LIE',
+    'LIE_TO_STAND'
+];
 
 main();
 
@@ -58,6 +79,14 @@ function main(){
             end();
         }
 
+        if(matches.indexOf('CTRL_A') >= 0){
+            startExperiment();
+        }
+
+        if(matches.indexOf('CTRL_S') >= 0){
+            stopExpreiment();
+        }
+
         if(matches.indexOf('ESCAPE') >= 0){
             commandMode = !commandMode;
             if(commandMode){
@@ -70,6 +99,53 @@ function main(){
     
     });
 
+}
+
+function startExperiment(){
+    dataStr = "";
+    totalPredictions = 0;
+    correctPredictions = 0;
+    accuracy = 0;
+    terminal.cyan('\nSet experiment activity ');
+        terminal.singleColumnMenu(activities, (e,r) => {
+            if(e){
+                console.log(e);
+                return;
+            }
+
+            actualActivity = r.selectedIndex;
+
+            terminal.cyan('Activity set to : ').red(activities[actualActivity]);
+
+            terminal('\Press enter to start...');
+            terminal.inputField((err,input) => {
+                terminal.gray('\nExperiment started\nPress').red(' CTRL_S ').gray(' to stop.')
+                experimentStarted = true;
+            });
+
+        });
+}
+
+function stopExpreiment(){
+
+    terminal.gray('\nExperiment stopped\nPress').green(' CTRL_A ').gray(' to start.')
+
+    predictions = dataStr.split('');
+    totalPredictions = predictions.length;
+    activityPredictions = []
+    
+    predictions.map((p,i) => {
+        activityPredictions.push(activities[p]);
+        if(p == actualActivity){
+            correctPredictions++;
+        }
+    });
+
+    experimentStarted = false;
+    accuracy = correctPredictions / totalPredictions;
+    terminal.cyan('Total Preditions ').white(totalPredictions)
+        .cyan('\nCorrect Predictions : ').green(correctPredictions)
+        .cyan('\nAccuracy : ').red(accuracy);
 }
 
 function command(){
@@ -180,18 +256,43 @@ function setFrequency(freq){
     });
 }
 
-bt.on('data', data => {
-    var dataStr = data.toString('utf-8');
+// bt.on('data', data => {
+//     var dataStr = data.toString('utf-8');
     
-    if(write){
-        writeStream.write(dataStr);
+//     if(write){
+//         writeStream.write(dataStr);
+//     }
+
+//     if(showDataOnScreen){
+//         console.log(dataStr);
+//     } else if(dataStr.split[0] == "RES"){
+//         terminal.brightBlue(dataStr.slice(4));
+//     }
+// });
+
+function argMax(array) {
+    return array.map((x, i) => [x, i]).reduce((r, a) => (a[0] > r[0] ? a : r))[1];
+}
+
+bt.on('data', data => {
+
+    dataStr += data.toString('utf-8');
+
+
+    if(experimentStarted){
+        
+        // var predictions = JSON.parse(dataStr);
+        // var activityPrediction = activities[argMax(predictions)];
+        // totalPredictions++;
+        // if(activityPrediction == actualActivity){
+        //     terminal.green(activityPrediction);
+        //     correctPredictions++;
+        // } else {
+        //     terminal.red(activityPrediction);
+        // }
+        dataStr += data.toString('utf-8');
     }
 
-    if(showDataOnScreen){
-        console.log(dataStr);
-    } else if(dataStr.split[0] == "RES"){
-        terminal.brightBlue(dataStr.slice(4));
-    }
 });
 
 function start(){
