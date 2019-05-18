@@ -263,8 +263,11 @@ public class DataCollectionService extends IntentService implements SensorEventL
         accData = null;
         gyroData = null;
 
-//        doInference(inputData);
+        dataBuffer = "" + arrMax(doInference(inputData)[0]);
 
+        Log.d(TAG, "onSensorChanged: " + dataBuffer);
+        byte[] out = dataBuffer.getBytes(StandardCharsets.UTF_8);
+        btService.write(out);
 
     }
 
@@ -314,11 +317,7 @@ public class DataCollectionService extends IntentService implements SensorEventL
 //        }
 
 
-        dataBuffer = "[" + printArray(doInference(inputData)[0]) + "]";
-//
-        Log.d(TAG, "onSensorChanged: " + dataBuffer);
-//        byte[] out = dataBuffer.getBytes(StandardCharsets.UTF_8);
-//        btService.write(out);
+
 
     }
 
@@ -353,15 +352,28 @@ public class DataCollectionService extends IntentService implements SensorEventL
         return fileChannel.map(FileChannel.MapMode.READ_ONLY, startOffset, declaredLength);
     }
 
-    public String printArray(float[] array) {
-        String res = "";
+//    public String printArray(float[] array) {
+//        String res = "";
+//
+//        for (int i = 0; i < array.length; i++){
+////            Log.d(TAG, "printArray: " + array[i]);
+//            res += array[i] + (i == array.length-1 ? "" : ",");
+//
+//        }
+//
+//        return res;
+//    }
 
-        for (int i = 0; i < array.length; i++){
-            res += array[i] + i == array.length-1 ? "" : ",";
+    public int arrMax(float[] array) {
+        int highest = 0;
 
+        for (int i = 1; i < array.length; i++) {
+            if (array[i] > array[highest]){
+                highest = i;
+            }
         }
-
-        return res;
+        Log.d(TAG, "arrMax: " + highest);
+        return highest;
     }
 
 
