@@ -344,7 +344,7 @@ public class DataCollectionService extends IntentService implements SensorEventL
     // Memory-map the model file from assets
     private MappedByteBuffer loadModelFile() throws IOException {
         // Open the model using an input stream, and memory map it to load
-        AssetFileDescriptor fileDescriptor = this.getAssets().openFd("CNN_Model.tflite");
+        AssetFileDescriptor fileDescriptor = this.getAssets().openFd("CNN.tflite");
         FileInputStream inputStream = new FileInputStream(fileDescriptor.getFileDescriptor());
         FileChannel fileChannel = inputStream.getChannel();
         long startOffset = fileDescriptor.getStartOffset();
