@@ -23,6 +23,7 @@ import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Queue;
 import java.util.LinkedList;
 import java.lang.Float;
@@ -44,6 +45,7 @@ public class DataCollectionService extends IntentService implements SensorEventL
 
     //model
     private Interpreter tflite;
+    String modelFile = "CNN_3.tflite";
 
     // Debugging
     private static final String TAG = "BluetoothService";
@@ -70,13 +72,13 @@ public class DataCollectionService extends IntentService implements SensorEventL
     private static int windowSize = 100;
     private static int dims = 6;
 
-    private static float[] gyroData = null;
-    private static float[] accData = null;
+    private static float[][] gyroData = new float[3][windowSize];
+    private static float[][] accData = new float[3][windowSize];
 
     private static float[] inputData = new float[windowSize * dims];
 
-    private static float[] accSensorData = new float[windowSize * 3];
-    private static float[] gyroSensorData = new float[windowSize * 3];
+    private static float[][] accSensorData = new float[3][windowSize];
+    private static float[][] gyroSensorData = new float[3][windowSize];
 
     Queue<Float> bufferQueue = new LinkedList<>();
 
@@ -229,7 +231,7 @@ public class DataCollectionService extends IntentService implements SensorEventL
         isGettingData = false;
     }
 
-    private void addGyroData(float[] data){
+    private void addGyroData(float[][] data){
         this.gyroData = data;
 
         if(accData != null) {
@@ -237,7 +239,7 @@ public class DataCollectionService extends IntentService implements SensorEventL
         }
     }
 
-    private void addAccData(float[] data){
+    private void addAccData(float[][] data){
         this.accData = data;
 
         if(gyroData != null){
@@ -248,20 +250,31 @@ public class DataCollectionService extends IntentService implements SensorEventL
     private void concatenateData(){
 
         for(int i = 0; i < windowSize; i++){
-            inputData[i * 6] = accData[i * 3];
-            inputData[i * 6 + 1] = accData[i * 3 + 1];
-            inputData[i * 6 + 2] = accData[i * 3 + 2];
-            inputData[i * 6 + 3] = gyroData[i * 3];
-            inputData[i * 6 + 4] = gyroData[i * 3 + 1];
-            inputData[i * 6 + 5] = gyroData[i * 3 + 2];
+            inputData[i] = accData[0][i];
         }
+        for (int i = 0; i < windowSize; i++){
+            inputData[i + 1 * windowSize] = accData[1][i];
+        }
+        for (int i = 0; i < windowSize; i++){
+            inputData[i + 2 * windowSize] = accData[2][i];
+        }
+        for (int i = 0; i < windowSize; i++){
+            inputData[i + 3 * windowSize] = gyroData[0][i];
+        }
+        for (int i = 0; i < windowSize; i++){
+            inputData[i + 4 * windowSize] = gyroData[1][i];
+        }
+        for (int i = 0; i < windowSize; i++){
+            inputData[i + 5 * windowSize] = gyroData[2][i];
+        }
+
 
         Log.d("data", "inputData : " + inputData.toString() );
         Log.d("data", "accData : " + accData.toString() );
         Log.d("data", "gyroData : " + gyroData.toString() );
 
-        accData = null;
-        gyroData = null;
+        accData = new float[3][windowSize];
+        gyroData = new float[3][windowSize];
 
         dataBuffer = "" + arrMax(doInference(inputData)[0]);
 
@@ -269,6 +282,12 @@ public class DataCollectionService extends IntentService implements SensorEventL
         byte[] out = dataBuffer.getBytes(StandardCharsets.UTF_8);
         btService.write(out);
 
+//        Log.d(TAG, "printArray: " + printArray(inputData).substring(0,3000));
+//        Log.d(TAG, "printArray: " + printArray(inputData).substring(3000,6000));
+//        Log.d(TAG, "printArray: " + printArray(inputData).substring(6000));
+
+//        Log.d(TAG, "input length: " + inputData.length);
+        Log.d(TAG, "probabilities: " + printArray(doInference(inputData)[0]));
     }
 
     @Override
@@ -284,22 +303,23 @@ public class DataCollectionService extends IntentService implements SensorEventL
 
             if (accTick >= windowSize) {
                 accTick = 0;
-                addAccData(accSensorData.clone());
+                addAccData(deepClone(accSensorData));
             } else {
-                accSensorData[accTick * 3] = sensorEvent.values[0] / 9.80665f;
-                accSensorData[accTick * 3 + 1] = sensorEvent.values[1] / 9.80665f;
-                accSensorData[accTick * 3 + 2] = sensorEvent.values[2] / 9.80665f;
+                accSensorData[0][accTick] = sensorEvent.values[0] / 9.80665f;
+                accSensorData[1][accTick] = sensorEvent.values[1] / 9.80665f;
+                accSensorData[2][accTick] = sensorEvent.values[2] / 9.80665f;
+
                 accTick++;
             }
         } if (sensorEvent.sensor.getType() == Sensor.TYPE_GYROSCOPE) {
 
             if (gyroTick >= windowSize) {
                 gyroTick = 0;
-                addGyroData(gyroSensorData.clone());
+                addGyroData(deepClone(gyroSensorData));
             } else {
-                gyroSensorData[gyroTick * 3] = sensorEvent.values[0];
-                gyroSensorData[gyroTick * 3 + 1] = sensorEvent.values[1];
-                gyroSensorData[gyroTick * 3 + 2] = sensorEvent.values[2];
+                gyroSensorData[0][gyroTick] = sensorEvent.values[0];
+                gyroSensorData[1][gyroTick] = sensorEvent.values[1];
+                gyroSensorData[2][gyroTick] = sensorEvent.values[2];
                 gyroTick++;
             }
         }
@@ -331,9 +351,7 @@ public class DataCollectionService extends IntentService implements SensorEventL
             e.printStackTrace();
         }
 
-//        printArray(output[0]);
         return output;
-
     }
 
     @Override
@@ -344,7 +362,7 @@ public class DataCollectionService extends IntentService implements SensorEventL
     // Memory-map the model file from assets
     private MappedByteBuffer loadModelFile() throws IOException {
         // Open the model using an input stream, and memory map it to load
-        AssetFileDescriptor fileDescriptor = this.getAssets().openFd("CNN.tflite");
+        AssetFileDescriptor fileDescriptor = this.getAssets().openFd(modelFile);
         FileInputStream inputStream = new FileInputStream(fileDescriptor.getFileDescriptor());
         FileChannel fileChannel = inputStream.getChannel();
         long startOffset = fileDescriptor.getStartOffset();
@@ -352,17 +370,17 @@ public class DataCollectionService extends IntentService implements SensorEventL
         return fileChannel.map(FileChannel.MapMode.READ_ONLY, startOffset, declaredLength);
     }
 
-//    public String printArray(float[] array) {
-//        String res = "";
-//
-//        for (int i = 0; i < array.length; i++){
-////            Log.d(TAG, "printArray: " + array[i]);
-//            res += array[i] + (i == array.length-1 ? "" : ",");
-//
-//        }
-//
-//        return res;
-//    }
+    public String printArray(float[] array) {
+        String res = "";
+
+        for (int i = 0; i < array.length; i++){
+//            Log.d(TAG, "printArray: " + array[i]);
+            res += array[i] + (i == array.length-1 ? "" : ",");
+
+        }
+
+        return res;
+    }
 
     public int arrMax(float[] array) {
         int highest = 0;
@@ -376,6 +394,16 @@ public class DataCollectionService extends IntentService implements SensorEventL
         return highest;
     }
 
+    public float[][] deepClone(float[][] array) {
+        if (array == null) {
+            return null;
+        }
 
+        final float[][] result = new float[array.length][];
+        for (int i = 0; i < array.length; i++) {
+            result[i] = Arrays.copyOf(array[i], array[i].length);
+        }
+        return result;
+    }
 
 }
